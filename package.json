@@ -1,0 +1,30 @@
+{
+  "name": "headless",
+  "description": "headless",
+  "author": "headless",
+  "version": "0.1.9",
+  "main": "start.js",
+  "keywords": [
+    "wallet",
+    "headless",
+    "full node"
+  ],
+  "license": "MIT",
+  "repository": {
+    "url": "git://github.com/dragonbtm/headless.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/dragonbtm/headless/issues"
+  },
+  "browser": {
+    "request": "browser-request",
+    "secp256k1": "secp256k1/js"
+  },
+  "dependencies": {
+    "core": "git+https://github.com/dragonbtm/core.git",
+    "bitcore-lib": "^0.13.14",
+    "bitcore-mnemonic": "~1.0.0",
+    "json-rpc2": "^1.0.2"
+  }
+}
