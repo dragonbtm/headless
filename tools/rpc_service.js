@@ -1,7 +1,22 @@
 /*jslint node: true */
 
+/*
+	Accept commands via JSON-RPC API.
+	The daemon listens on port 6332 by default.
+	See https://developer.obyte.org/json-rpc/running-rpc-service for detailed description of the API
+*/
 
 "use strict";
+var fs = require('fs');
+var desktopApp = require('core/desktop_app.js');
+var appDataDir = desktopApp.getAppDataDir();
+var path = require('path');
+
+if (require.main === module && !fs.existsSync(appDataDir) && fs.existsSync(path.dirname(appDataDir)+'/headless')){
+	console.log('=== will rename old data dir');
+	fs.renameSync(path.dirname(appDataDir)+'/headless', appDataDir);
+}
+
 var headlessWallet = require('../start.js');
 var conf = require('core/conf.js');
 var eventBus = require('core/event_bus.js');
@@ -25,8 +40,8 @@ function initRPC() {
 	var balances = require('core/balances.js');
 
 	var server = rpc.Server.$create({
-		'websocket': true, // is true by default 
-		'headers': { // allow custom headers is empty by default 
+		'websocket': true, // is true by default
+		'headers': { // allow custom headers is empty by default
 			'Access-Control-Allow-Origin': '*'
 		}
 	});
@@ -57,13 +72,13 @@ function initRPC() {
 		var address = args[0];
 		cb(null, validationUtils.isValidAddress(address));
 	});
-	
+
 	// alias for validateaddress
 	server.expose('verifyaddress', function(args, opt, cb) {
 		var address = args[0];
 		cb(null, validationUtils.isValidAddress(address));
 	});
-	
+
 	/**
 	 * Creates and returns new wallet address.
 	 * @return {String} address
@@ -83,7 +98,7 @@ function initRPC() {
 	 * If your wallet doesn`t own the address, then returns "address not found".
 	 * @param {String} address
 	 * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
-	 * 
+	 *
 	 * If no address supplied, returns wallet balance(stable and pending).
 	 * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
 	 */
@@ -128,7 +143,7 @@ function initRPC() {
 
 	/**
 	 * Returns wallet balance(stable and pending) without commissions earned from headers and witnessing.
-	 * 
+	 *
 	 * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
 	 */
 	server.expose('getmainbalance', function(args, opt, cb) {
@@ -142,9 +157,9 @@ function initRPC() {
 	/**
 	 * Returns transaction list.
 	 * If address is invalid, then returns "invalid address".
-	 * @param {String} address or {since_mci: {Integer}, unit: {String}} 
+	 * @param {String} address or {since_mci: {Integer}, unit: {String}}
 	 * @return [{"action":{'invalid','received','sent','moved'},"amount":{Integer},"my_address":{String},"arrPayerAddresses":[{String}],"confirmations":{0,1},"unit":{String},"fee":{Integer},"time":{String},"level":{Integer},"asset":{String}}] transactions
-	 * 
+	 *
 	 * If no address supplied, returns wallet transaction list.
 	 * @return [{"action":{'invalid','received','sent','moved'},"amount":{Integer},"my_address":{String},"arrPayerAddresses":[{String}],"confirmations":{0,1},"unit":{String},"fee":{Integer},"time":{String},"level":{Integer},"asset":{String}}] transactions
 	 */
@@ -188,8 +203,6 @@ function initRPC() {
 	 * @return {String} status
 	 */
 	server.expose('sendtoaddress', function(args, opt, cb) {
-
-
 		console.log('sendtoaddress '+JSON.stringify(args));
 		let start_time = Date.now();
 		var amount = args[1];
@@ -212,7 +225,7 @@ function initRPC() {
 
 	headlessWallet.readSingleWallet(function(_wallet_id) {
 		wallet_id = _wallet_id;
-		// listen creates an HTTP server on localhost only 
+		// listen creates an HTTP server on localhost only
 		var httpServer = server.listen(conf.rpcPort, conf.rpcInterface);
 		httpServer.timeout = 900*1000;
 	});

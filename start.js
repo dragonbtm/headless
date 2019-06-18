@@ -4,9 +4,17 @@ var fs = require('fs');
 var crypto = require('crypto');
 var util = require('util');
 var constants = require('core/constants.js');
+var desktopApp = require('core/desktop_app.js');
+var appDataDir = desktopApp.getAppDataDir();
+var path = require('path');
+
+if (require.main === module && !fs.existsSync(appDataDir) && fs.existsSync(path.dirname(appDataDir)+'/headless')){
+	console.log('=== will rename old data dir');
+	fs.renameSync(path.dirname(appDataDir)+'/headless', appDataDir);
+}
+
 var conf = require('core/conf.js');
 var objectHash = require('core/object_hash.js');
-var desktopApp = require('core/desktop_app.js');
 var db = require('core/db.js');
 var eventBus = require('core/event_bus.js');
 var ecdsaSig = require('core/signature.js');
@@ -15,7 +23,6 @@ var Mnemonic = require('bitcore-mnemonic');
 var Bitcore = require('bitcore-lib');
 var readline = require('readline');
 
-var appDataDir = desktopApp.getAppDataDir();
 var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
 var wallet_id;
 var xPrivKey;
@@ -77,8 +84,8 @@ function readKeys(onDone){
 				if (process.stdout.moveCursor) process.stdout.moveCursor(0, -1);
 				if (process.stdout.clearLine)  process.stdout.clearLine();
 				var keys = JSON.parse(data);
-				var deviceTempPrivKey = Buffer(keys.temp_priv_key, 'base64');
-				var devicePrevTempPrivKey = Buffer(keys.prev_temp_priv_key, 'base64');
+				var deviceTempPrivKey = Buffer.from(keys.temp_priv_key, 'base64');
+				var devicePrevTempPrivKey = Buffer.from(keys.prev_temp_priv_key, 'base64');
 				determineIfWalletExists(function(bWalletExists){
 					if (bWalletExists)
 						onDone(keys.mnemonic_phrase, passphrase, deviceTempPrivKey, devicePrevTempPrivKey);
@@ -560,7 +567,7 @@ function signMessage(signing_address, message, cb) {
 
 
 function handleText(from_address, text, onUnknown){
-	
+
 	text = text.trim();
 	var fields = text.split(/ /);
 	var command = fields[0].trim().toLowerCase();
@@ -581,13 +588,13 @@ function handleText(from_address, text, onUnknown){
 					device.sendMessageToDevice(from_address, 'text', addressInfo.address);
 				});
 			break;
-			
+
 		case 'balance':
 			prepareBalanceText(function(balance_text){
 				device.sendMessageToDevice(from_address, 'text', balance_text);
 			});
 			break;
-			
+
 		case 'pay':
 			analyzePayParams(params[0], params[1], function(asset, amount){
 				if(asset===null && amount===null){
@@ -612,7 +619,7 @@ function handleText(from_address, text, onUnknown){
 							sendPayment(asset, amount, conf.payout_address, address, from_address);
 						});
 					else
-						// create a new change address or select first unused one
+					// create a new change address or select first unused one
 						issueChangeAddressAndSendPayment(asset, amount, conf.payout_address, from_address);
 				};
 
@@ -639,6 +646,19 @@ function handleText(from_address, text, onUnknown){
 			});
 			break;
 
+		case 'space':
+			getFileSizes(appDataDir, function(data) {
+				var total_space = 0;
+				var response = '';
+				Object.keys(data).forEach(function(key) {
+					total_space += data[key];
+					response += key +' '+ niceBytes(data[key]) +"\n";
+				});
+				response += 'Total: '+ niceBytes(total_space);
+				device.sendMessageToDevice(from_address, 'text', response);
+			});
+			break;
+
 		default:
 			if (onUnknown){
 				onUnknown(from_address, text);
@@ -646,6 +666,38 @@ function handleText(from_address, text, onUnknown){
 				device.sendMessageToDevice(from_address, 'text', "unrecognized command");
 			}
 	}
+}
+
+function niceBytes(x){
+	// source: https://stackoverflow.com/a/39906526
+	const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+	let l = 0, n = parseInt(x, 10) || 0;
+	while(n >= 1024 && ++l)
+		n = n/1024;
+
+	//include a decimal point and a tenths-place digit if presenting
+	//less than ten of KB or greater units
+	return(n.toFixed(n < 10 && l > 0 ? 1 : 0) + ' ' + units[l]);
+}
+
+function getFileSizes(rootDir, cb) {
+	fs.readdir(rootDir, function(err, files) {
+		var fileSizes = {};
+		for (var index = 0; index < files.length; ++index) {
+			var file = files[index];
+			if (file[0] !== '.') {
+				var filePath = rootDir + '/' + file;
+				fs.stat(filePath, function(err, stat) {
+					if (stat.isFile()) {
+						fileSizes[this.file] = stat['size'];
+					}
+					if (files.length === (this.index + 1)) {
+						return cb(fileSizes);
+					}
+				}.bind({index: index, file: file}));
+			}
+		}
+	});
 }
 
 function analyzePayParams(amountText, assetText, cb){
@@ -656,7 +708,7 @@ function analyzePayParams(amountText, assetText, cb){
 	if (amountText===''&&assetText==='') return cb(null, null);
 
 	var pattern = /^\d+$/;
-    if(pattern.test(amountText)){
+	if(pattern.test(amountText)){
 
 		var amount = parseInt(amountText);
 

@@ -6,6 +6,7 @@
   "main": "start.js",
   "keywords": [
     "wallet",
+	"DAG",
     "headless",
     "full node"
   ],

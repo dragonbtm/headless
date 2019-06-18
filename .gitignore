@@ -35,7 +35,7 @@ Session.vim
 .netrwhist
 *~
 
-play/textcoins-*
+tools/textcoins-*
 isolate-*-v8.log
 processed.txt
 .idea/
