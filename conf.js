@@ -7,7 +7,15 @@ exports.bServeAsHub = false;
 exports.bLight = false;
 
 
-exports.storage = 'sqlite';
+exports.storage = 'mysql';
+
+exports.database = {
+	host:"localhost",
+	name:"hub",
+	user:"root",
+	password:"root"
+}
+
 
 exports.WS_PROTOCOL = 'ws://';
 exports.hub = process.env.testnet ? 'xxx.org/bb-test' : '127.0.0.1:8286';
