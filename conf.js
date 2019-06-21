@@ -4,13 +4,21 @@
 //exports.port = 6611;
 //exports.myUrl = 'wss://mydomain.com/bb';
 exports.bServeAsHub = false;
-exports.bLight = true;
+exports.bLight = false;
 
 
-exports.storage = 'sqlite';
+exports.storage = 'mysql';
+
+exports.database = {
+	host:"localhost",
+	name:"headless",
+	user:"root",
+	password:"root"
+}
+
 
 exports.WS_PROTOCOL = 'ws://';
-exports.hub = '192.168.5.149:8286';
+exports.hub = '127.0.0.1:8286';
 exports.deviceName = 'Headless';
 exports.permanent_pairing_secret = 'randomstring';
 exports.control_addresses = ['DEVICE ALLOWED TO CHAT'];
